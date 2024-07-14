@@ -1,0 +1,8 @@
+ERROR:root:Error in bot.
+Traceback (most recent call last):
+  File "opponent_bots/production_bot.py", line 46, in <module>
+    current_line = input()
+  File "<string>", line 1
+    P 11.803996 11.215721 0 37 3
+              ^
+SyntaxError: invalid syntax
