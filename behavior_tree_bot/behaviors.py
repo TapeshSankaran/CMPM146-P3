@@ -16,7 +16,7 @@ def attack_weakest_enemy_planet(state):
         my_planet = next(my_planets)
         target_planet = next(target_planets)
         while True:
-            required_ships = find_future_value(state, my_planet, target_planet) + alloc_heuristic(state, target_planet)
+            required_ships = find_future_value(state, my_planet, target_planet) + alloc_formula(state, target_planet)
 
             if my_planet.num_ships > required_ships:
                 issue_order(state, my_planet.ID, target_planet.ID, required_ships)
@@ -25,16 +25,19 @@ def attack_weakest_enemy_planet(state):
             else:
                 my_planet = next(my_planets)
 
-    except StopIteration:
+    except:
         return
 
 def spread_to_weakest_neutral_planet(state):
     my_planets = iter(sorted(state.my_planets(), key=lambda p: p.num_ships))
     enemy_planets = iter(sorted(state.enemy_planets(), key=lambda p: p.num_ships))
+    source = max(state.my_planets(), key=lambda p: p.growth_rate, default=None)
+    if not source:
+        return
 
     target_planets = iter(sorted([planet for planet in state.neutral_planets()
                                     if not any(fleet.destination_planet == planet.ID for fleet in state.my_fleets())], 
-                                    key=lambda p: p.num_ships))
+                                    key=lambda p: p.num_ships * state.distance(source.ID, p.ID)))
 
     try:
         my_planet = next(my_planets)
@@ -42,7 +45,7 @@ def spread_to_weakest_neutral_planet(state):
         enemy_planet = min(enemy_planets, key=lambda p: state.distance(p.ID, target_planet.ID), default=None)
         while True:
             #required_ships = find_future_value(state, my_planet, target_planet) + 1
-            required_ships = (target_planet.num_ships + 1) if enemy_planet and state.distance(enemy_planet.ID, target_planet.ID) > state.distance(my_planet.ID, target_planet.ID) \
+            required_ships = (target_planet.num_ships + 1) if enemy_planet and state.distance(enemy_planet.ID, target_planet.ID) > state.distance(my_planet.ID, target_planet.ID)+10 \
                         else find_future_value(state, my_planet, target_planet)
 
             if my_planet.num_ships > required_ships:
@@ -52,30 +55,30 @@ def spread_to_weakest_neutral_planet(state):
             else:
                 my_planet = next(my_planets)
 
-    except StopIteration:
+    except:
         return
     
 def send_reinforcements(state):
     my_planets = iter(sorted(state.my_planets(), key=lambda p: p.num_ships))
 
-    target_planets = iter(sorted([planet for planet in state.neutral_planets()
-                                    if not any(fleet.destination_planet == planet.ID for fleet in state.my_fleets())], 
+    target_fleets = iter(sorted([fleet for fleet in state.enemy_fleets()
+                                    if not any(ally.destination_planet == fleet.destination_planet for ally in state.my_fleets())], 
                                     key=lambda p: p.num_ships))
 
     try:
         my_planet = next(my_planets)
-        target_planet = next(target_planets)
+        target_fleet = next(target_fleets)
         while True:
-            required_ships = find_future_value(state, my_planet, target_planet)
+            required_ships = target_fleet + find_future_value(state, my_planet, target_fleet.destination_planet)
 
             if my_planet.num_ships > required_ships:
                 issue_order(state, my_planet.ID, target_planet.ID, required_ships)
                 my_planet = next(my_planets)
-                target_planet = next(target_planets)
+                target_planet = next(target_fleet)
             else:
                 my_planet = next(my_planets)
 
-    except StopIteration:
+    except:
         return
 
 def find_future_value(state, source, destination):
@@ -91,10 +94,10 @@ def enemy_heuristic(state, enemy):
     roamLvl = state.distance(enemy.ID, enemy_spawn.ID)
     dangerLvl = state.distance(enemy.ID, my_spawn.ID)
     value = enemy.growth_rate
-    
-    return value * math.sqrt(math.log(enemy.num_ships + 1) / dangerLvl) - math.log(roamLvl + 1)
 
-def alloc_heuristic(state, enemy):
+    return value * math.sqrt(math.log(enemy.num_ships + 1) / dangerLvl) - roamLvl
+
+def alloc_formula(state, enemy):
     enemy_spawn = max(state.enemy_planets(), key=lambda p: p.growth_rate, default=None)
     if not enemy_spawn:
         return 0
@@ -104,6 +107,7 @@ def alloc_heuristic(state, enemy):
 
     try:
         return (enemy_spawn.num_ships / roamLvl)  + value + 1
+    
     except:
         return 1
 
