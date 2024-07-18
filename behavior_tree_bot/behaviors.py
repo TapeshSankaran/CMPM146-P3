@@ -151,7 +151,6 @@ def alloc_formula(state, enemy):
     # Return formula. If roamLvl is 0, then enemy being looked at is the spawner.
     try:
         return (enemy_spawn.num_ships / roamLvl)  + value + 1
-    
     except:
         return 1
 

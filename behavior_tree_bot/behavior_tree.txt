@@ -1,0 +1,9 @@
+INFO:root:
+Selector: High Level Ordering of Strategies
+| Sequence: Defense Strategy
+| | Check: have_largest_fleet
+| | Action: send_reinforcements
+| Sequence: Spread Strategy
+| | Check: if_neutral_planet_available
+| | Action: spread_to_weakest_neutral_planet
+| Action: attack_weakest_enemy_planet
